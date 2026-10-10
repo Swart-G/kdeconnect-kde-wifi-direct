@@ -253,6 +253,26 @@ public:
     }
 };
 
+class WifiDirectDbusInterfaceForeign
+{
+    Q_GADGET
+    QML_NAMED_ELEMENT(WifiDirectDbusInterface)
+    QML_FOREIGN(WifiDirectDbusInterface)
+    QML_UNCREATABLE("Use WifiDirectDbusInterfaceFactory")
+};
+
+class WifiDirectDbusInterfaceFactory : public QObject
+{
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+public:
+    Q_INVOKABLE WifiDirectDbusInterface *create(const QString &deviceId)
+    {
+        return new WifiDirectDbusInterface(deviceId);
+    }
+};
+
 class DeviceBatteryDbusInterfaceFactory : public QObject
 {
     Q_OBJECT

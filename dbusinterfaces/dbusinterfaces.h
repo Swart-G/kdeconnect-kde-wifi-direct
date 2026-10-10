@@ -16,6 +16,7 @@
 #include "generated/deviceclipboardinterface.h"
 #include "generated/devicefindmyphoneinterface.h"
 #include "generated/deviceinterface.h"
+#include "generated/wifidirectinterface.h"
 #include "generated/devicenotificationsinterface.h"
 #include "generated/devicesftpinterface.h"
 #include "generated/lockdeviceinterface.h"
@@ -257,6 +258,16 @@ public:
     explicit ClipboardDbusInterface(const QString &deviceId, QObject *parent = nullptr);
 Q_SIGNALS:
     void autoShareDisabledChangedProxy(bool b);
+};
+
+class KDECONNECTDBUSINTERFACES_EXPORT WifiDirectDbusInterface : public OrgKdeKdeconnectDeviceWifidirectInterface
+{
+    Q_OBJECT
+    Q_PROPERTY(QString status READ status NOTIFY statusChangedProxy)
+public:
+    explicit WifiDirectDbusInterface(const QString &deviceId, QObject *parent = nullptr);
+Q_SIGNALS:
+    void statusChangedProxy();
 };
 
 #endif

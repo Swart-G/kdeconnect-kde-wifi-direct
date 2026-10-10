@@ -3,7 +3,7 @@ add_definitions(-DTRANSLATION_DOMAIN=\"kdeconnect-core\")
 add_subdirectory(backends/lan)
 add_subdirectory(backends/loopback)
 
-option(BLUETOOTH_ENABLED "Bluetooth support for kdeconnect" ON)
+option(BLUETOOTH_ENABLED "Bluetooth support for kdeconnect" OFF)
 if(BLUETOOTH_ENABLED)
     find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Bluetooth)
     add_subdirectory(backends/bluetooth)
@@ -32,6 +32,7 @@ target_sources(kdeconnectcore PRIVATE
     filetransferjob.cpp
     compositefiletransferjob.cpp
     daemon.cpp
+    wifidirectmanager.cpp
     device.cpp
     sslhelper.cpp
     core_debug.cpp

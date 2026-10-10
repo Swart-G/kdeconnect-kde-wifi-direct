@@ -65,6 +65,8 @@ private:
     QPointer<QBluetoothServer> mBluetoothServer;
     QBluetoothServiceInfo mKdeconnectService;
     QBluetoothServiceDiscoveryAgent *mServiceDiscoveryAgent;
+    QMap<QBluetoothAddress, QBluetoothServiceInfo> mKnownServices;
+    QSet<QBluetoothAddress> mConnecting;
     bool mDisabled;
 
     QMap<QString, DeviceLink *> mLinks;

@@ -17,10 +17,7 @@
 #include "kdeconnectconfig.h"
 #include "networkpacket.h"
 #include "notificationserverinfo.h"
-
-#ifdef KDECONNECT_BLUETOOTH
-#include "backends/bluetooth/bluetoothlinkprovider.h"
-#endif
+#include "wifidirectmanager.h"
 
 #include "backends/devicelink.h"
 #include "backends/lan/lanlinkprovider.h"
@@ -38,6 +35,7 @@ struct DaemonPrivate {
     QMap<QString, Device *> m_devices;
 
     bool m_testMode;
+    WifiDirectManager *m_wifiDirect = nullptr;
 };
 
 Daemon *Daemon::instance()
@@ -84,10 +82,9 @@ void Daemon::init()
     } else {
         d->m_linkProviders.insert(new LanLinkProvider(false, disabledLinkProviders.contains(QStringLiteral("lan"))));
         qCDebug(KDECONNECT_CORE) << "Constructed LanLinkProvider Backend";
-#ifdef KDECONNECT_BLUETOOTH
-        d->m_linkProviders.insert(new BluetoothLinkProvider(disabledLinkProviders.contains(QStringLiteral("bluetooth"))));
-        qCDebug(KDECONNECT_CORE) << "Constructed BluetoothLinkProvider Backend";
-#endif
+        d->m_wifiDirect = new WifiDirectManager(this);
+        connect(d->m_wifiDirect, &WifiDirectManager::changed, this, &Daemon::wifiDirectChanged);
+        connect(d->m_wifiDirect, &WifiDirectManager::networkActivated, this, &Daemon::forceOnNetworkChange);
 #ifdef KDECONNECT_LOOPBACK
         d->m_linkProviders.insert(new LoopbackLinkProvider(disabledLinkProviders.contains(QStringLiteral("loopback"))));
         qCDebug(KDECONNECT_CORE) << "Constructed LoopbackLinkProvider Backend";
@@ -142,6 +139,46 @@ void Daemon::forceOnNetworkChange()
     }
 }
 
+QString Daemon::wifiDirectStatus() const
+{
+    return d->m_wifiDirect ? d->m_wifiDirect->status() : QString();
+}
+
+QStringList Daemon::wifiDirectNetworks() const
+{
+    return d->m_wifiDirect ? d->m_wifiDirect->networks() : QStringList();
+}
+
+bool Daemon::wifiDirectSearching() const
+{
+    return d->m_wifiDirect && d->m_wifiDirect->searching();
+}
+
+bool Daemon::wifiDirectConnecting() const
+{
+    return d->m_wifiDirect && d->m_wifiDirect->connecting();
+}
+
+void Daemon::startWifiDirectDiscovery()
+{
+    if (d->m_wifiDirect) d->m_wifiDirect->startDiscovery();
+}
+
+void Daemon::stopWifiDirectDiscovery()
+{
+    if (d->m_wifiDirect) d->m_wifiDirect->stopDiscovery();
+}
+
+void Daemon::connectWifiDirectNetwork(const QString &ssid, const QString &password)
+{
+    if (d->m_wifiDirect) d->m_wifiDirect->connectNetwork(ssid, password);
+}
+
+void Daemon::disconnectWifiDirectNetwork()
+{
+    if (d->m_wifiDirect) d->m_wifiDirect->disconnectNetwork();
+}
+
 Device *Daemon::getDevice(const QString &deviceId)
 {
     for (Device *device : std::as_const(d->m_devices)) {
@@ -191,7 +228,7 @@ void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
             break;
         }
     }
-    Q_ASSERT(providerByName);
+    if (!providerByName) return;
 
     auto disabledLinkProviders = configInstance.disabledLinkProviders();
     if (!enabled && !disabledLinkProviders.contains(providerByName->id())) {

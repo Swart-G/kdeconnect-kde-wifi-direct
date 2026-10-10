@@ -53,6 +53,14 @@ public:
 
 public Q_SLOTS:
     Q_SCRIPTABLE void forceOnNetworkChange();
+    Q_SCRIPTABLE QString wifiDirectStatus() const;
+    Q_SCRIPTABLE QStringList wifiDirectNetworks() const;
+    Q_SCRIPTABLE bool wifiDirectSearching() const;
+    Q_SCRIPTABLE bool wifiDirectConnecting() const;
+    Q_SCRIPTABLE void startWifiDirectDiscovery();
+    Q_SCRIPTABLE void stopWifiDirectDiscovery();
+    Q_SCRIPTABLE void connectWifiDirectNetwork(const QString &ssid, const QString &password);
+    Q_SCRIPTABLE void disconnectWifiDirectNetwork();
 
     /// don't try to turn into Q_PROPERTY, it doesn't work
     Q_SCRIPTABLE QString announcedName();
@@ -74,6 +82,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE virtual void sendSimpleNotification(const QString &eventId, const QString &title, const QString &text, const QString &iconName) = 0;
 
 Q_SIGNALS:
+    Q_SCRIPTABLE void wifiDirectChanged();
     Q_SCRIPTABLE void deviceAdded(const QString &id);
     Q_SCRIPTABLE void deviceRemoved(const QString &id); // Note that paired devices will never be removed
     Q_SCRIPTABLE void deviceVisibilityChanged(const QString &id, bool isVisible);

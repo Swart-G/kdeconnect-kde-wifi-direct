@@ -33,6 +33,11 @@ BluetoothLinkProvider::BluetoothLinkProvider(bool isDisabled)
         connect(this, &BluetoothLinkProvider::startRequestEvent, connectTimer, qOverload<>(&QTimer::start));
         connect(this, &BluetoothLinkProvider::disableRequestEvent, connectTimer, &QTimer::stop);
         connect(this, &BluetoothLinkProvider::stopRequestEvent, connectTimer, &QTimer::stop);
+        if (!isDisabled) {
+            wrappedInstance->onStart();
+            connectTimer->start();
+            wrappedInstance->onStartDiscovery();
+        }
     });
 
     workerThread.start();

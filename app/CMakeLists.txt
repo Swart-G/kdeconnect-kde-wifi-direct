@@ -45,6 +45,7 @@ ecm_target_qml_sources(kdeconnect-app SOURCES
     qml/PluginSettings.qml
     qml/Settings.qml
     qml/WelcomePage.qml
+    qml/NearbyWifi.qml
     qml/NotificationPanel.qml
 )
 

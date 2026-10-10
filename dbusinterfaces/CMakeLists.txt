@@ -51,6 +51,8 @@ geninterface(${PROJECT_SOURCE_DIR}/plugins/remotesystemvolume/remotesystemvolume
 geninterface(${PROJECT_SOURCE_DIR}/plugins/virtualmonitor/virtualmonitorplugin.h generated/virtualmonitorinterface)
 geninterface(${PROJECT_SOURCE_DIR}/plugins/clipboard/clipboardplugin.h generated/deviceclipboardinterface)
 
+geninterface(${PROJECT_SOURCE_DIR}/plugins/wifidirect/wifidirectplugin.h generated/wifidirectinterface)
+
 # System dbus interfaces
 if (UNIX AND NOT APPLE)
     geninterface(systeminterfaces/org.freedesktop.login1.xml generated/systeminterfaces/login1)

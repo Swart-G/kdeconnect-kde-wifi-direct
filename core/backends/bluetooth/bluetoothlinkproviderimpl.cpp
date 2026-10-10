@@ -42,7 +42,11 @@ void BluetoothLinkProviderImpl::onStartDiscovery()
 {
     if (!mDisabled && mServiceDiscoveryAgent != nullptr) {
         qCDebug(KDECONNECT_CORE) << "BluetoothLinkProviderImpl::onStartDiscovery executed";
-        mServiceDiscoveryAgent->start();
+        const auto knownServices = mKnownServices;
+        for (const auto &service : knownServices) {
+            serviceDiscovered(service);
+        }
+        if (!mServiceDiscoveryAgent->isActive()) mServiceDiscoveryAgent->start(QBluetoothServiceDiscoveryAgent::FullDiscovery);
     }
 }
 
@@ -86,6 +90,7 @@ void BluetoothLinkProviderImpl::enable()
     if (mDisabled) {
         mDisabled = false;
         tryToInitialise();
+        onStartDiscovery();
     }
 }
 
@@ -105,6 +110,7 @@ void BluetoothLinkProviderImpl::onNetworkChange()
     if (!mDisabled) {
         qCDebug(KDECONNECT_CORE) << "BluetoothLinkProviderImpl::onNetworkChange executed";
         tryToInitialise();
+        onStartDiscovery();
     }
 }
 
@@ -115,6 +121,7 @@ void BluetoothLinkProviderImpl::connectError()
     if (!socket)
         return;
 
+    mConnecting.remove(QBluetoothAddress(socket->property("kdeconnectRemoteAddress").toString()));
     qCWarning(KDECONNECT_CORE) << "Couldn't connect to bluetooth socket:" << socket->errorString();
 
     disconnect(socket, &QBluetoothSocket::connected, this, nullptr);
@@ -144,15 +151,20 @@ void BluetoothLinkProviderImpl::serviceDiscovered(const QBluetoothServiceInfo &o
                              << old_info.serviceDescription() << old_info.socketProtocol() << old_info.isValid() << old_info.isComplete()
                              << old_info.isRegistered() << old_info.serviceClassUuids();
 
-    auto info = *(new QBluetoothServiceInfo(old_info));
+    mKnownServices.insert(old_info.device().address(), old_info);
+    auto info = old_info;
     info.setServiceUuid(mServiceUuid);
-    if (mSockets.contains(info.device().address())) {
+    if (mSockets.contains(info.device().address()) || mConnecting.contains(info.device().address())) {
         qCDebug(KDECONNECT_CORE) << "BluetoothLinkProviderImpl::serviceDiscovered sockets contains address, returning";
         return;
     }
 
     qCDebug(KDECONNECT_CORE) << "BluetoothLinkProviderImpl::serviceDiscovered before creating socket";
     QBluetoothSocket *socket = new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol);
+    socket->setPreferredSecurityFlags(QBluetooth::Security::Encryption | QBluetooth::Security::Secure);
+
+    mConnecting.insert(info.device().address());
+    socket->setProperty("kdeconnectRemoteAddress", info.device().address().toString());
 
     // Delay before sending data
     QPointer<QBluetoothSocket> deleteableSocket = socket;
@@ -185,6 +197,7 @@ void BluetoothLinkProviderImpl::clientConnected(QPointer<QBluetoothSocket> socke
         return;
 
     auto peer = socket->peerAddress();
+    mConnecting.remove(peer);
 
     qCDebug(KDECONNECT_CORE) << "Connected to" << peer;
 
@@ -218,6 +231,11 @@ void BluetoothLinkProviderImpl::clientConnected(QPointer<QBluetoothSocket> socke
 void BluetoothLinkProviderImpl::clientIdentityReceived(const QBluetoothAddress &peer, QSharedPointer<MultiplexChannel> socket)
 {
     qCDebug(KDECONNECT_CORE) << "BluetoothLinkProviderImpl::clientIdentityReceived executed";
+    if (!socket->isWritable()) {
+        socket->close();
+        return;
+    }
+    if (!socket->canReadLine()) return;
     socket->startTransaction();
 
     QByteArray identityArray = socket->readLine();
@@ -249,6 +267,7 @@ void BluetoothLinkProviderImpl::clientIdentityReceived(const QBluetoothAddress &
     }
     QSslCertificate receivedCertificate(certificateBody.toLatin1());
     DeviceInfo deviceInfo = DeviceInfo::FromIdentityPacketAndCert(receivedPacket, receivedCertificate);
+    qCDebug(KDECONNECT_CORE) << "Bluetooth peer identity" << peer << deviceInfo.id << deviceInfo.name;
     BluetoothDeviceLink *deviceLink = new BluetoothDeviceLink(deviceInfo, mParent, mSockets[peer], socket);
 
     DeviceInfo myDeviceInfo = KdeConnectConfig::instance().deviceInfo();
@@ -366,6 +385,7 @@ void BluetoothLinkProviderImpl::serverDataReceived(const QBluetoothAddress &peer
     }
     QSslCertificate receivedCertificate(certificateBody.toLatin1());
     DeviceInfo deviceInfo = DeviceInfo::FromIdentityPacketAndCert(receivedPacket, receivedCertificate);
+    qCDebug(KDECONNECT_CORE) << "Bluetooth peer identity" << peer << deviceInfo.id << deviceInfo.name;
     BluetoothDeviceLink *deviceLink = new BluetoothDeviceLink(deviceInfo, mParent, mSockets[peer], socket);
 
     addLink(deviceLink, deviceInfo.id);

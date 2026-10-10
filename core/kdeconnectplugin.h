@@ -29,6 +29,8 @@ public:
     Device const *device() const;
 
     bool sendPacket(NetworkPacket &np) const;
+    bool sendPacketViaProvider(NetworkPacket &np, const QString &provider) const;
+    void invalidateLinkProvider(const QString &provider) const;
 
     KdeConnectPluginConfig *config() const;
 

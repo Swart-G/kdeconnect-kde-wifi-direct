@@ -199,4 +199,12 @@ ClipboardDbusInterface::ClipboardDbusInterface(const QString &deviceId, QObject 
     connect(this, &OrgKdeKdeconnectDeviceClipboardInterface::autoShareDisabledChanged, this, &ClipboardDbusInterface::autoShareDisabledChangedProxy);
 }
 
+WifiDirectDbusInterface::WifiDirectDbusInterface(const QString &deviceId, QObject *parent)
+    : OrgKdeKdeconnectDeviceWifidirectInterface(DaemonDbusInterface::activatedService(),
+        QStringLiteral("/modules/kdeconnect/devices/%1/wifidirect").arg(deviceId),
+        QDBusConnection::sessionBus(), parent)
+{
+    connect(this, &OrgKdeKdeconnectDeviceWifidirectInterface::statusChanged, this, &WifiDirectDbusInterface::statusChangedProxy);
+}
+
 #include "moc_dbusinterfaces.cpp"

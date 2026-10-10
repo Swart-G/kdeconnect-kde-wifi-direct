@@ -1,0 +1,12 @@
+{
+    "$schema": "../kdeconnect.schema.json",
+    "KPlugin": {
+        "Name": "Nearby connection",
+        "Description": "Connect directly to Android devices over Wi-Fi without Bluetooth",
+        "EnabledByDefault": true,
+        "Icon": "network-wireless",
+        "License": "GPL"
+    },
+    "X-KdeConnect-SupportedPacketType": ["kdeconnect.wifidirect.info"],
+    "X-KdeConnect-OutgoingPacketType": ["kdeconnect.wifidirect.request"]
+}

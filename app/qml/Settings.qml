@@ -35,6 +35,8 @@ Kirigami.ScrollablePage
             }
         }
 
+        NearbyWifi {}
+
         FormCard.FormHeader {
             title: i18nc("@title:group", "Backends")
         }

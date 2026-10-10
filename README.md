@@ -1,3 +1,7 @@
+# Local direct Wi-Fi build
+
+See [DIRECT_WIFI.md](DIRECT_WIFI.md) for connection and reconnection without Bluetooth.
+
 # KDE Connect - desktop app
 
 KDE Connect is a multi-platform app that allows your devices to communicate (eg: your phone and your computer).

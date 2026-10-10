@@ -23,6 +23,8 @@ Kirigami.ScrollablePage {
         device: root.currentDevice
     }
 
+    property var nearbyInterface: currentDevice ? WifiDirectDbusInterfaceFactory.create(currentDevice.id()) : null
+
     ConnectivityInfo {
         id: connectivityInfo
         device: root.currentDevice
@@ -145,6 +147,32 @@ Kirigami.ScrollablePage {
         }
 
         property list<QtObject> plugins: [
+            PluginItem {
+                name: i18n("Nearby connection: %1", root.nearbyInterface?.status ?? "")
+                pluginName: "wifidirect"
+                iconNameOverride: "network-wireless"
+                section: "info"
+                device: root.currentDevice
+                hidden: !loaded
+            },
+            PluginItem {
+                name: i18n("Retry nearby connection")
+                pluginName: "wifidirect"
+                iconNameOverride: "view-refresh"
+                section: "action"
+                device: root.currentDevice
+                hidden: !loaded
+                onClick: () => root.currentDevice.pluginCall("wifidirect", "retry")
+            },
+            PluginItem {
+                name: i18n("Disconnect direct network")
+                pluginName: "wifidirect"
+                iconNameOverride: "network-disconnect"
+                section: "action"
+                device: root.currentDevice
+                hidden: !loaded
+                onClick: () => root.currentDevice.pluginCall("wifidirect", "disconnectNetwork")
+            },
             PluginItem {
                 name: i18nd("kdeconnect-app", "Multimedia control")
                 interfaceFactory: MprisDbusInterfaceFactory

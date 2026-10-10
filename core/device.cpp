@@ -122,6 +122,22 @@ QStringList Device::reachableAddresses() const
     return addresses;
 }
 
+void Device::invalidateLinkProvider(const QString &provider)
+{
+    for (DeviceLink *link : std::as_const(d->m_deviceLinks)) {
+        if (link->provider() == provider) link->deleteLater();
+    }
+}
+
+QStringList Device::activeProviderIds() const
+{
+    QStringList providers;
+    for (const DeviceLink *link : std::as_const(d->m_deviceLinks)) {
+        providers.append(link->provider());
+    }
+    return providers;
+}
+
 QStringList Device::activeProviderNames() const
 {
     QList<QString> providers;
@@ -359,6 +375,11 @@ void Device::removeLink(DeviceLink *link)
 
 bool Device::sendPacket(NetworkPacket &np)
 {
+    return sendPacketViaProvider(np, {});
+}
+
+bool Device::sendPacketViaProvider(NetworkPacket &np, const QString &provider)
+{
     Q_ASSERT(isPaired() || np.type() == PACKET_TYPE_PAIR);
 
     if (!(np.isProtocolPacket() || d->m_deviceInfo.incomingCapabilities.contains(np.type()))) {
@@ -368,7 +389,7 @@ bool Device::sendPacket(NetworkPacket &np)
 
     // Maybe we could block here any packet that is not an identity or a pairing packet to prevent sending non encrypted data
     for (DeviceLink *dl : std::as_const(d->m_deviceLinks)) {
-        if (dl->sendPacket(np))
+        if ((provider.isEmpty() || dl->provider() == provider) && dl->sendPacket(np))
             return true;
     }
 

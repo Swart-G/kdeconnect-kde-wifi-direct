@@ -9,6 +9,7 @@ import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
+import org.kde.kdeconnect
 
 FormCard.FormCardPage {
     id: root
@@ -39,6 +40,8 @@ FormCard.FormCardPage {
         Layout.fillWidth: true
         Layout.topMargin: Kirigami.Units.largeSpacing
     }
+
+    NearbyWifi {}
 
     FormCard.FormHeader {
         title: i18nc("@title:context", "KDE Connect Android App")

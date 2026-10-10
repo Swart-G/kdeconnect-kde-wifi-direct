@@ -30,6 +30,7 @@ class KDECONNECTCORE_EXPORT Device : public QObject
     Q_PROPERTY(QString statusIconName READ statusIconName NOTIFY typeChanged)
     Q_PROPERTY(bool isReachable READ isReachable NOTIFY reachableChanged)
     Q_PROPERTY(QStringList reachableAddresses READ reachableAddresses NOTIFY linksChanged)
+    Q_PROPERTY(QStringList activeProviderIds READ activeProviderIds NOTIFY linksChanged)
     Q_PROPERTY(QStringList activeProviderNames READ activeProviderNames NOTIFY linksChanged)
     Q_PROPERTY(bool isPaired READ isPaired NOTIFY pairStateChanged)
     Q_PROPERTY(bool isPairRequested READ isPairRequested NOTIFY pairStateChanged)
@@ -92,6 +93,8 @@ public:
 
     virtual QStringList reachableAddresses() const;
     virtual QStringList activeProviderNames() const;
+    QStringList activeProviderIds() const;
+    void invalidateLinkProvider(const QString &provider);
 
     Q_SCRIPTABLE QStringList loadedPlugins() const;
     Q_SCRIPTABLE bool hasPlugin(const QString &name) const;
@@ -111,6 +114,7 @@ public Q_SLOTS:
     /// sends a @p np packet to the device
     /// virtual for testing purposes.
     virtual bool sendPacket(NetworkPacket &np);
+    bool sendPacketViaProvider(NetworkPacket &np, const QString &provider);
 
     // Dbus operations
 public Q_SLOTS:
