@@ -30,7 +30,7 @@ void WifiDirectPlugin::retry()
 
 void WifiDirectPlugin::disconnectNetwork()
 {
-    Daemon::instance()->disconnectWifiDirectNetwork();
+    Daemon::instance()->disconnectWifiDirectSession();
 }
 
 void WifiDirectPlugin::receivePacket(const NetworkPacket &)

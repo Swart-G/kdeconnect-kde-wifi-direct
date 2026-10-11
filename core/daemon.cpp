@@ -80,11 +80,18 @@ void Daemon::init()
         d->m_linkProviders.insert(new LoopbackLinkProvider(false));
         qCDebug(KDECONNECT_CORE) << "Constructed LoopbackLink Backend";
     } else {
-        d->m_linkProviders.insert(new LanLinkProvider(false, disabledLinkProviders.contains(QStringLiteral("lan"))));
+        auto *lan = new LanLinkProvider(false, disabledLinkProviders.contains(QStringLiteral("lan")));
+        d->m_linkProviders.insert(lan);
         qCDebug(KDECONNECT_CORE) << "Constructed LanLinkProvider Backend";
         d->m_wifiDirect = new WifiDirectManager(this);
         connect(d->m_wifiDirect, &WifiDirectManager::changed, this, &Daemon::wifiDirectChanged);
-        connect(d->m_wifiDirect, &WifiDirectManager::networkActivated, this, &Daemon::forceOnNetworkChange);
+        connect(d->m_wifiDirect, &WifiDirectManager::interfaceReady, lan, &LanLinkProvider::setWifiDirectInterface);
+        connect(d->m_wifiDirect, &WifiDirectManager::sessionEnded, lan, [lan] { lan->setWifiDirectInterface({}); });
+        connect(lan, &LanLinkProvider::wifiDirectLinkAuthenticated, this, [this](const QString &id) {
+            auto *device = getDevice(id);
+            d->m_wifiDirect->authenticatedDevice(id, device && device->isPaired());
+        });
+        connect(lan, &LanLinkProvider::wifiDirectLinkLost, d->m_wifiDirect, &WifiDirectManager::disconnectSession);
 #ifdef KDECONNECT_LOOPBACK
         d->m_linkProviders.insert(new LoopbackLinkProvider(disabledLinkProviders.contains(QStringLiteral("loopback"))));
         qCDebug(KDECONNECT_CORE) << "Constructed LoopbackLinkProvider Backend";
@@ -144,40 +151,15 @@ QString Daemon::wifiDirectStatus() const
     return d->m_wifiDirect ? d->m_wifiDirect->status() : QString();
 }
 
-QStringList Daemon::wifiDirectNetworks() const
-{
-    return d->m_wifiDirect ? d->m_wifiDirect->networks() : QStringList();
-}
-
-bool Daemon::wifiDirectSearching() const
-{
-    return d->m_wifiDirect && d->m_wifiDirect->searching();
-}
-
-bool Daemon::wifiDirectConnecting() const
-{
-    return d->m_wifiDirect && d->m_wifiDirect->connecting();
-}
-
-void Daemon::startWifiDirectDiscovery()
-{
-    if (d->m_wifiDirect) d->m_wifiDirect->startDiscovery();
-}
-
-void Daemon::stopWifiDirectDiscovery()
-{
-    if (d->m_wifiDirect) d->m_wifiDirect->stopDiscovery();
-}
-
-void Daemon::connectWifiDirectNetwork(const QString &ssid, const QString &password)
-{
-    if (d->m_wifiDirect) d->m_wifiDirect->connectNetwork(ssid, password);
-}
-
-void Daemon::disconnectWifiDirectNetwork()
-{
-    if (d->m_wifiDirect) d->m_wifiDirect->disconnectNetwork();
-}
+bool Daemon::wifiDirectAvailable() const { return d->m_wifiDirect && d->m_wifiDirect->available(); }
+QString Daemon::wifiDirectUnavailableReason() const { return d->m_wifiDirect ? d->m_wifiDirect->unavailableReason() : QString(); }
+QString Daemon::wifiDirectState() const { return d->m_wifiDirect ? d->m_wifiDirect->state() : QStringLiteral("unavailable"); }
+QVariantList Daemon::wifiDirectPeers() const { return d->m_wifiDirect ? d->m_wifiDirect->peers() : QVariantList(); }
+QString Daemon::wifiDirectConnectedDeviceId() const { return d->m_wifiDirect ? d->m_wifiDirect->connectedDeviceId() : QString(); }
+void Daemon::startWifiDirectDiscovery() { if (d->m_wifiDirect) d->m_wifiDirect->startDiscovery(); }
+void Daemon::stopWifiDirectDiscovery() { if (d->m_wifiDirect) d->m_wifiDirect->stopDiscovery(); }
+void Daemon::connectWifiDirectPeer(const QString &id) { if (d->m_wifiDirect) d->m_wifiDirect->connectPeer(id); }
+void Daemon::disconnectWifiDirectSession() { if (d->m_wifiDirect) d->m_wifiDirect->disconnectSession(); }
 
 Device *Daemon::getDevice(const QString &deviceId)
 {
@@ -298,6 +280,7 @@ void Daemon::onNewDeviceLink(DeviceLink *link)
 void Daemon::onDeviceStatusChanged()
 {
     Device *device = (Device *)sender();
+    if (d->m_wifiDirect) d->m_wifiDirect->devicePaired(device->id(), device->isPaired());
 
     qCDebug(KDECONNECT_CORE) << "Device" << device->name() << "status changed. Reachable:" << device->isReachable() << ". Paired: " << device->isPaired();
 

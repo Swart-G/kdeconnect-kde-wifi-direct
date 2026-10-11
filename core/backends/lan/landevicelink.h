@@ -41,6 +41,8 @@ public:
     }
 
     QHostAddress hostAddress() const;
+    bool usesSocket(const QSslSocket *socket) const { return m_socket == socket; }
+    QHostAddress localAddress() const { return m_socket ? m_socket->localAddress() : QHostAddress(); }
 
 private Q_SLOTS:
     void dataReceived();

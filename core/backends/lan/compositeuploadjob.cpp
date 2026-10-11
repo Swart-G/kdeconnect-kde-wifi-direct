@@ -13,8 +13,9 @@
 #include <daemon.h>
 #include <device.h>
 
-CompositeUploadJob::CompositeUploadJob(Device *device, bool displayNotification)
+CompositeUploadJob::CompositeUploadJob(Device *device, bool displayNotification, const QHostAddress &localAddress)
     : KCompositeJob(device)
+    , m_localAddress(localAddress)
     , m_server(new Server(this))
     , m_socket(nullptr)
     , m_port(0)
@@ -74,7 +75,7 @@ void CompositeUploadJob::start()
 bool CompositeUploadJob::startListening()
 {
     m_port = MIN_PORT;
-    while (!m_server->listen(QHostAddress::Any, m_port)) {
+    while (!m_server->listen(m_localAddress, m_port)) {
         m_port++;
         if (m_port > MAX_PORT) { // No ports available?
             qCWarning(KDECONNECT_CORE) << "CompositeUploadJob::startListening() - Error opening a port in range" << MIN_PORT << "-" << MAX_PORT;

@@ -9,6 +9,8 @@
 #include <QCoreApplication>
 #include <QDBusPendingCall>
 #include <QDBusPendingReply>
+#include <QDBusArgument>
+#include <QDBusMetaType>
 #include <QDebug>
 
 Q_DECLARE_METATYPE(QDBusPendingReply<>)
@@ -16,6 +18,27 @@ Q_DECLARE_METATYPE(QDBusPendingReply<QVariant>)
 Q_DECLARE_METATYPE(QDBusPendingReply<bool>)
 Q_DECLARE_METATYPE(QDBusPendingReply<int>)
 Q_DECLARE_METATYPE(QDBusPendingReply<QString>)
+Q_DECLARE_METATYPE(QDBusPendingReply<QVariantList>)
+
+static QVariant decodeReply(QVariant value)
+{
+    if (value.metaType() == QMetaType::fromType<QDBusArgument>()) {
+        const auto argument = value.value<QDBusArgument>();
+        if (argument.currentSignature() == QLatin1String("av")) value = qdbus_cast<QVariantList>(argument);
+        else if (argument.currentSignature() == QLatin1String("a{sv}")) value = qdbus_cast<QVariantMap>(argument);
+    }
+    if (value.metaType() == QMetaType::fromType<QVariantList>()) {
+        auto list = value.toList();
+        for (auto &item : list) item = decodeReply(item);
+        return list;
+    }
+    if (value.metaType() == QMetaType::fromType<QVariantMap>()) {
+        auto map = value.toMap();
+        for (auto &item : map) item = decodeReply(item);
+        return map;
+    }
+    return value;
+}
 
 DBusResponseWaiter *DBusResponseWaiter::m_instance = nullptr;
 
@@ -34,7 +57,8 @@ DBusResponseWaiter::DBusResponseWaiter()
                  << qRegisterMetaType<QDBusPendingReply<QVariant>>("QDBusPendingReply<QVariant>")
                  << qRegisterMetaType<QDBusPendingReply<bool>>("QDBusPendingReply<bool>") << qRegisterMetaType<QDBusPendingReply<int>>("QDBusPendingReply<int>")
                  << qRegisterMetaType<QDBusPendingReply<QString>>("QDBusPendingReply<QString>")
-                 << qRegisterMetaType<QDBusPendingReply<QStringList>>("QDBusPendingReply<QStringList>");
+                 << qRegisterMetaType<QDBusPendingReply<QStringList>>("QDBusPendingReply<QStringList>")
+                 << qRegisterMetaType<QDBusPendingReply<QVariantList>>("QDBusPendingReply<QVariantList>");
 }
 
 QVariant DBusResponseWaiter::waitForReply(QVariant variant) const
@@ -50,7 +74,7 @@ QVariant DBusResponseWaiter::waitForReply(QVariant variant) const
         QDBusMessage reply = call->reply();
 
         if (reply.arguments().count() > 0) {
-            return reply.arguments().at(0);
+            return decodeReply(reply.arguments().at(0));
         }
     }
     return QVariant();
@@ -91,7 +115,7 @@ void DBusAsyncResponse::onCallFinished(QDBusPendingCallWatcher *watcher)
             QDBusMessage reply = call->reply();
 
             if (reply.arguments().count() > 0) {
-                Q_EMIT success(reply.arguments().at(0));
+                Q_EMIT success(decodeReply(reply.arguments().at(0)));
             } else {
                 Q_EMIT success(QVariant());
             }

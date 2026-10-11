@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <QNetworkInformation>
+#include <QNetworkInterface>
 #include <QObject>
 #include <QSslSocket>
 #include <QTcpServer>
@@ -53,6 +54,14 @@ public:
 
     void deviceDiscovered(const QHostAddress &address, int port, const QString &deviceId, int protocolVersion);
 
+    void setWifiDirectInterface(const QString &name);
+    bool isWifiDirectAddress(const QHostAddress &address) const;
+
+Q_SIGNALS:
+    void wifiDirectLinkAuthenticated(const QString &id);
+    void wifiDirectLinkLost();
+
+public:
     static void configureSslSocket(QSslSocket *socket, const QString &deviceId, bool isDeviceTrusted);
     static void configureSocket(QSslSocket *socket);
 
@@ -85,6 +94,7 @@ private Q_SLOTS:
     void debouncedOnNetworkChange();
 
 private:
+    friend class LanTransportTest;
     void addLink(QSslSocket *socket, const DeviceInfo &deviceInfo);
     QList<QHostAddress> getBroadcastAddresses();
     void sendUdpDiscoveryPacket(const QList<QHostAddress> &addresses);
@@ -92,6 +102,11 @@ private:
     void broadcastUdpDiscoveryPacket();
     bool isProtocolDowngrade(const QString &deviceId, int protocolVersion) const;
 
+    QHostAddress directSource(const QHostAddress &peer) const;
+    QList<QNetworkAddressEntry> m_directAddresses;
+    unsigned m_directGeneration = 0;
+    QString m_directDeviceId;
+    QTimer m_directDiscovery;
     Server *m_server;
     QUdpSocket m_udpSocket;
     quint16 m_tcpPort;

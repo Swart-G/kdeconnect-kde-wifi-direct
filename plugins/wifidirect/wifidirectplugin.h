@@ -18,5 +18,5 @@ public:
     Q_SCRIPTABLE void disconnectNetwork();
 
 Q_SIGNALS:
-    void statusChanged();
+    Q_SCRIPTABLE void statusChanged();
 };

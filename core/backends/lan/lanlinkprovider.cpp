@@ -72,6 +72,8 @@ LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
     }
 #endif
 
+    m_directDiscovery.setInterval(2000);
+    connect(&m_directDiscovery, &QTimer::timeout, this, &LanLinkProvider::broadcastUdpDiscoveryPacket);
     m_combineNetworkChangeTimer.setInterval(0); // increase this if waiting a single event-loop iteration is not enough
     m_combineNetworkChangeTimer.setSingleShot(true);
     connect(&m_combineNetworkChangeTimer, &QTimer::timeout, this, &LanLinkProvider::debouncedOnNetworkChange);
@@ -103,6 +105,39 @@ LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
 LanLinkProvider::~LanLinkProvider()
 {
     delete m_mdnsDiscovery;
+}
+
+void LanLinkProvider::setWifiDirectInterface(const QString &name)
+{
+    ++m_directGeneration;
+    m_directDeviceId.clear();
+    m_directDiscovery.stop();
+    m_directAddresses = QNetworkInterface::interfaceFromName(name).addressEntries();
+    const auto sockets = findChildren<QSslSocket *>();
+    for (auto *socket : sockets) {
+        if (socket->property("directGeneration").isValid()) socket->abort();
+    }
+    if (!m_directAddresses.isEmpty()) m_directDiscovery.start();
+    onNetworkChange();
+}
+
+bool LanLinkProvider::isWifiDirectAddress(const QHostAddress &address) const
+{
+    bool ok;
+    const auto ipv4 = QHostAddress(address.toIPv4Address(&ok));
+    for (const auto &entry : m_directAddresses) {
+        if (entry.ip() == address || (ok && entry.ip() == ipv4)) return true;
+    }
+    return false;
+}
+
+QHostAddress LanLinkProvider::directSource(const QHostAddress &peer) const
+{
+    for (const auto &entry : m_directAddresses) {
+        if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol && entry.prefixLength() > 0
+            && peer.isInSubnet(entry.ip(), entry.prefixLength())) return entry.ip();
+    }
+    return {};
 }
 
 void LanLinkProvider::enable()
@@ -241,7 +276,11 @@ void LanLinkProvider::sendUdpDiscoveryPacket(const QList<QHostAddress> &addresse
                 if (sourceAddress.protocol() == QAbstractSocket::IPv4Protocol && sourceAddress != QHostAddress::LocalHost) {
                     qCDebug(KDECONNECT_CORE) << "Broadcasting as" << sourceAddress;
                     sendSocket.bind(sourceAddress);
-                    sendUdpDiscoveryPacket(sendSocket, addresses);
+                    if (isWifiDirectAddress(sourceAddress)) {
+                        sendUdpDiscoveryPacket(sendSocket, {ifaceAddress.broadcast()});
+                    } else {
+                        sendUdpDiscoveryPacket(sendSocket, addresses);
+                    }
                     sendSocket.close();
                 }
             }
@@ -318,6 +357,7 @@ void LanLinkProvider::deviceDiscovered(const QHostAddress &address, int port, co
         return;
     }
 
+    if (auto *link = m_links.value(deviceId); link && isWifiDirectAddress(link->localAddress()) && directSource(connectAddress).isNull()) return;
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     if (now - m_lastConnectionTimeCleanup >= MILLIS_DELAY_BETWEEN_CONNECTIONS_TO_SAME_DEVICE) {
         for (auto it = m_lastConnectionTime.begin(); it != m_lastConnectionTime.end();) {
@@ -359,6 +399,11 @@ void LanLinkProvider::deviceDiscovered(const QHostAddress &address, int port, co
     connect(socket, &QAbstractSocket::connected, this, [this, socket, deviceId, protocolVersion]() {
         tcpSocketConnected(socket, deviceId, protocolVersion);
     });
+    const auto source = directSource(connectAddress);
+    if (!source.isNull()) {
+        socket->setProperty("directGeneration", m_directGeneration);
+        if (!socket->bind(source)) { socket->deleteLater(); return; }
+    }
     socket->connectToHost(connectAddress, port);
 }
 
@@ -366,7 +411,12 @@ void LanLinkProvider::recoverConnectionError(QHostAddress sender)
 {
     qCInfo(KDECONNECT_CORE) << "Connection error, attempting reverse connection";
     NetworkPacket np = KdeConnectConfig::instance().deviceInfo().toUdpDiscoveryPacket(m_tcpPort);
-    m_udpSocket.writeDatagram(np.serialize(), sender, UDP_PORT);
+    const auto source = directSource(sender);
+    if (source.isNull()) m_udpSocket.writeDatagram(np.serialize(), sender, UDP_PORT);
+    else {
+        QUdpSocket socket;
+        if (socket.bind(source)) socket.writeDatagram(np.serialize(), sender, UDP_PORT);
+    }
 }
 
 // We discovered a device and connected to it via TCP. This gets called on a successful connection.
@@ -490,6 +540,7 @@ void LanLinkProvider::newTcpConnection()
     while (m_server->hasPendingConnections()) {
         QSslSocket *socket = m_server->nextPendingConnection();
         configureSocket(socket);
+        if (isWifiDirectAddress(socket->localAddress())) socket->setProperty("directGeneration", m_directGeneration);
         // This socket is still managed by us (and child of the QTcpServer), if
         // it disconnects before we manage to pass it to a LanDeviceLink, it's
         // our responsibility to delete it. We do so with this connection.
@@ -590,8 +641,7 @@ bool LanLinkProvider::isProtocolDowngrade(const QString &deviceId, int protocolV
 void LanLinkProvider::onLinkDestroyed(const QString &deviceId, DeviceLink *oldPtr)
 {
     qCDebug(KDECONNECT_CORE) << "LanLinkProvider deviceLinkDestroyed" << deviceId;
-    DeviceLink *link = m_links.take(deviceId);
-    Q_ASSERT(link == oldPtr);
+    if (m_links.value(deviceId) == oldPtr) m_links.remove(deviceId);
 }
 
 void LanLinkProvider::configureSslSocket(QSslSocket *socket, const QString &deviceId, bool isDeviceTrusted)
@@ -649,6 +699,15 @@ void LanLinkProvider::configureSocket(QSslSocket *socket)
 
 void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
 {
+    const auto generation = socket->property("directGeneration");
+    if (generation.isValid() && (generation.toUInt() != m_directGeneration || m_directAddresses.isEmpty())) {
+        socket->abort();
+        return;
+    }
+    if (generation.isValid() && !m_directDeviceId.isEmpty() && m_directDeviceId != deviceInfo.id) {
+        socket->abort();
+        return;
+    }
     QString certDeviceId = socket->peerCertificate().subjectDisplayName();
     DBusHelper::filterNonExportableCharacters(certDeviceId);
     if (deviceInfo.id != certDeviceId) {
@@ -656,9 +715,6 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
         qCWarning(KDECONNECT_CORE) << "DeviceID in cert doesn't match deviceID in identity packet." << deviceInfo.id << "vs" << certDeviceId;
         return;
     }
-
-    // Socket disconnection will now be handled by LanDeviceLink
-    disconnect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
 
     LanDeviceLink *deviceLink;
     // Do we have a link for this device already?
@@ -671,7 +727,12 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
             socket->deleteLater();
             return;
         }
-        // qCDebug(KDECONNECT_CORE) << "Reusing link to" << deviceId;
+        if (isWifiDirectAddress(deviceLink->localAddress()) && !isWifiDirectAddress(socket->localAddress())) {
+            socket->abort();
+            socket->deleteLater();
+            return;
+        }
+        disconnect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
         deviceLink->reset(socket);
     } else {
         bool isDeviceTrusted = KdeConnectConfig::instance().trustedDevices().contains(deviceInfo.id);
@@ -687,6 +748,16 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
         m_links[deviceInfo.id] = deviceLink;
     }
     Q_EMIT onConnectionReceived(deviceLink);
+    if (isWifiDirectAddress(socket->localAddress())) {
+        m_directDiscovery.stop();
+        m_directDeviceId = deviceInfo.id;
+        const auto id = deviceInfo.id;
+        connect(socket, &QAbstractSocket::disconnected, this, [this, socket, generation, id] {
+            const auto *link = m_links.value(id);
+            if (link && link->usesSocket(socket) && generation.toUInt() == m_directGeneration && !m_directAddresses.isEmpty()) Q_EMIT wifiDirectLinkLost();
+        });
+        Q_EMIT wifiDirectLinkAuthenticated(deviceInfo.id);
+    }
 }
 
 #include "moc_lanlinkprovider.cpp"

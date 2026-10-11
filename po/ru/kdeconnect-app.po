@@ -522,3 +522,43 @@ msgstr "Apple Store"
 
 #~ msgid "Find devices..."
 #~ msgstr "Найти устройства…"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "On your phone, open Nearby connection and make it available for 60 seconds. Find and select the phone here, then accept the system Wi-Fi Direct request. Compare the KDE Connect pairing codes on both devices."
+msgstr "На телефоне откройте подключение поблизости и включите доступность на 60 секунд. Здесь найдите и выберите телефон, затем примите системный запрос Wi-Fi Direct. Сверьте коды сопряжения KDE Connect на обоих устройствах."
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Stop nearby search"
+msgstr "Остановить поиск поблизости"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Find nearby devices (60 seconds)"
+msgstr "Найти устройства поблизости (60 секунд)"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Nearby device (unverified)"
+msgstr "Устройство поблизости (не подтверждено)"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Connect through Wi-Fi Direct"
+msgstr "Подключить через Wi-Fi Direct"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Open KDE Connect device"
+msgstr "Открыть устройство KDE Connect"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Cancel connection"
+msgstr "Отменить подключение"
+
+#: app/qml/NearbyWifi.qml
+#, kde-format
+msgid "Disconnect Wi-Fi Direct"
+msgstr "Отключить Wi-Fi Direct"

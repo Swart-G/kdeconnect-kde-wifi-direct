@@ -20,7 +20,7 @@ class KDECONNECTCORE_EXPORT CompositeUploadJob : public KCompositeJob
     Q_OBJECT
 
 public:
-    explicit CompositeUploadJob(Device *device, bool displayNotification);
+    explicit CompositeUploadJob(Device *device, bool displayNotification, const QHostAddress &localAddress = QHostAddress::Any);
 
     void start() override;
     QVariantMap transferInfo();
@@ -52,6 +52,7 @@ protected:
     bool doKill() override;
 
 private:
+    QHostAddress m_localAddress;
     Server *const m_server;
     QSslSocket *m_socket;
     quint16 m_port;

@@ -33,6 +33,7 @@ target_sources(kdeconnectcore PRIVATE
     compositefiletransferjob.cpp
     daemon.cpp
     wifidirectmanager.cpp
+    wifidirectcapabilities.cpp
     device.cpp
     sslhelper.cpp
     core_debug.cpp
@@ -48,6 +49,12 @@ ecm_qt_declare_logging_category(kdeconnectcore
 target_include_directories(kdeconnectcore PUBLIC ${PROJECT_SOURCE_DIR})
 
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBNL REQUIRED IMPORTED_TARGET libnl-3.0 libnl-genl-3.0)
+    target_link_libraries(kdeconnectcore PRIVATE PkgConfig::LIBNL)
+endif()
 
 target_link_libraries(kdeconnectcore
 PUBLIC

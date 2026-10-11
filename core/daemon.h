@@ -54,13 +54,15 @@ public:
 public Q_SLOTS:
     Q_SCRIPTABLE void forceOnNetworkChange();
     Q_SCRIPTABLE QString wifiDirectStatus() const;
-    Q_SCRIPTABLE QStringList wifiDirectNetworks() const;
-    Q_SCRIPTABLE bool wifiDirectSearching() const;
-    Q_SCRIPTABLE bool wifiDirectConnecting() const;
+    Q_SCRIPTABLE bool wifiDirectAvailable() const;
+    Q_SCRIPTABLE QString wifiDirectUnavailableReason() const;
+    Q_SCRIPTABLE QString wifiDirectState() const;
+    Q_SCRIPTABLE QVariantList wifiDirectPeers() const;
+    Q_SCRIPTABLE QString wifiDirectConnectedDeviceId() const;
     Q_SCRIPTABLE void startWifiDirectDiscovery();
     Q_SCRIPTABLE void stopWifiDirectDiscovery();
-    Q_SCRIPTABLE void connectWifiDirectNetwork(const QString &ssid, const QString &password);
-    Q_SCRIPTABLE void disconnectWifiDirectNetwork();
+    Q_SCRIPTABLE void connectWifiDirectPeer(const QString &id);
+    Q_SCRIPTABLE void disconnectWifiDirectSession();
 
     /// don't try to turn into Q_PROPERTY, it doesn't work
     Q_SCRIPTABLE QString announcedName();

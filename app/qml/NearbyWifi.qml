@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
-
 import QtQuick
-import QtQuick.Controls as Controls
 import org.kde.kirigamiaddons.formcard as FormCard
 import org.kde.kdeconnect
 
 FormCard.FormCard {
     id: root
-
+    property bool searching: stateProperty.value === "searching"
+    property bool session: ["connecting", "getting-ip", "verifying", "awaiting-pairing", "connected"].indexOf(stateProperty.value) >= 0
     Connections {
         target: DaemonDbusInterface
         function onWifiDirectChanged() {
             statusProperty.get();
-            networksProperty.get();
-            searchingProperty.get();
-            connectingProperty.get();
+            peersProperty.get();
+            stateProperty.get();
+            availableProperty.get();
+            reasonProperty.get();
+            deviceProperty.get();
         }
     }
-
     DBusProperty {
         id: statusProperty
         object: DaemonDbusInterface
@@ -26,83 +26,83 @@ FormCard.FormCard {
         defaultValue: ""
     }
     DBusProperty {
-        id: networksProperty
+        id: availableProperty
         object: DaemonDbusInterface
-        read: "wifiDirectNetworks"
+        read: "wifiDirectAvailable"
+        change: "wifiDirectChanged"
+        defaultValue: false
+    }
+    DBusProperty {
+        id: reasonProperty
+        object: DaemonDbusInterface
+        read: "wifiDirectUnavailableReason"
+        change: "wifiDirectChanged"
+        defaultValue: ""
+    }
+    DBusProperty {
+        id: stateProperty
+        object: DaemonDbusInterface
+        read: "wifiDirectState"
+        change: "wifiDirectChanged"
+        defaultValue: "unavailable"
+    }
+    DBusProperty {
+        id: peersProperty
+        object: DaemonDbusInterface
+        read: "wifiDirectPeers"
         change: "wifiDirectChanged"
         defaultValue: []
     }
     DBusProperty {
-        id: searchingProperty
+        id: deviceProperty
         object: DaemonDbusInterface
-        read: "wifiDirectSearching"
+        read: "wifiDirectConnectedDeviceId"
         change: "wifiDirectChanged"
-        defaultValue: false
+        defaultValue: ""
     }
-    DBusProperty {
-        id: connectingProperty
-        object: DaemonDbusInterface
-        read: "wifiDirectConnecting"
-        change: "wifiDirectChanged"
-        defaultValue: false
-    }
-
     FormCard.FormTextDelegate {
-        text: i18n("Start the direct Wi-Fi network in Nearby connection on your phone. Search here, select its network and enter the password shown on the phone. The password is saved for later connections.")
+        text: i18n("On your phone, open Nearby connection and make it available for 60 seconds. Find and select the phone here, then accept the system Wi-Fi Direct request. Compare the KDE Connect pairing codes on both devices.")
         textItem.wrapMode: Text.WordWrap
         textItem.elide: Text.ElideNone
     }
     FormCard.FormTextDelegate {
-        text: statusProperty.value
+        text: !availableProperty.value ? reasonProperty.value : statusProperty.value
         textItem.wrapMode: Text.WordWrap
         textItem.elide: Text.ElideNone
     }
     FormCard.FormButtonDelegate {
-        text: searchingProperty.value ? i18n("Stop Wi-Fi search") : i18n("Find nearby Wi-Fi networks (60 seconds)")
-        icon.name: searchingProperty.value ? "process-stop" : "network-wireless"
-        enabled: !connectingProperty.value
-        onClicked: {
-            if (searchingProperty.value) {
-                DaemonDbusInterface.stopWifiDirectDiscovery();
-            } else {
-                DaemonDbusInterface.startWifiDirectDiscovery();
-            }
-        }
+        text: root.searching ? i18n("Stop nearby search") : i18n("Find nearby devices (60 seconds)")
+        icon.name: root.searching ? "process-stop" : "network-wireless"
+        enabled: !root.session
+        onClicked: root.searching ? DaemonDbusInterface.stopWifiDirectDiscovery() : DaemonDbusInterface.startWifiDirectDiscovery()
     }
     FormCard.FormComboBoxDelegate {
-        id: networkSelector
-        text: i18n("Phone network")
-        model: networksProperty.value
-        visible: networksProperty.value.length > 0
-        enabled: !connectingProperty.value
-    }
-    FormCard.FormTextFieldDelegate {
-        id: passwordField
-        label: i18n("Wi-Fi password")
-        placeholderText: i18n("Leave empty to use the saved password")
-        echoMode: Controls.TextField.Password
-        visible: networksProperty.value.length > 0
-        enabled: !connectingProperty.value
-    }
-    FormCard.FormTextDelegate {
-        visible: networksProperty.value.length > 0
-        text: i18n("Connecting uses your computer's Wi-Fi adapter and disconnects its current Wi-Fi network. Ethernet stays available.")
-        textItem.wrapMode: Text.WordWrap
-        textItem.elide: Text.ElideNone
+        id: peerSelector
+        text: i18n("Nearby device (unverified)")
+        model: peersProperty.value
+        textRole: "name"
+        valueRole: "id"
+        visible: peersProperty.value.length > 0
+        enabled: !root.session
     }
     FormCard.FormButtonDelegate {
-        text: i18n("Connect directly over Wi-Fi")
+        text: i18n("Connect through Wi-Fi Direct")
         icon.name: "network-connect"
-        visible: networksProperty.value.length > 0
-        enabled: networkSelector.currentIndex >= 0 && !connectingProperty.value
-        onClicked: {
-            DaemonDbusInterface.connectWifiDirectNetwork(networkSelector.currentText, passwordField.text);
-            passwordField.text = "";
-        }
+        visible: peersProperty.value.length > 0
+        enabled: availableProperty.value && peerSelector.currentIndex >= 0 && !root.session
+                 && peersProperty.value[peerSelector.currentIndex].available
+        onClicked: DaemonDbusInterface.connectWifiDirectPeer(peersProperty.value[peerSelector.currentIndex].id)
     }
     FormCard.FormButtonDelegate {
-        text: connectingProperty.value ? i18n("Cancel connection") : i18n("Disconnect direct Wi-Fi")
+        text: i18n("Open KDE Connect device")
+        icon.name: "smartphone"
+        visible: deviceProperty.value.length > 0
+        onClicked: applicationWindow().openDevice(deviceProperty.value, "")
+    }
+    FormCard.FormButtonDelegate {
+        text: ["connecting", "getting-ip", "verifying"].indexOf(stateProperty.value) >= 0 ? i18n("Cancel connection") : i18n("Disconnect Wi-Fi Direct")
         icon.name: "network-disconnect"
-        onClicked: DaemonDbusInterface.disconnectWifiDirectNetwork()
+        visible: root.session
+        onClicked: DaemonDbusInterface.disconnectWifiDirectSession()
     }
 }

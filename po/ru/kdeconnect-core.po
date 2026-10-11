@@ -229,3 +229,153 @@ msgstr "Не удалось сохранить файл сертификата: 
 
 #~ msgid "Received incorrect key"
 #~ msgstr "Получен неправильный ключ."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "NetworkManager restarted. Start a new search to reconnect."
+msgstr "NetworkManager перезапущен. Для подключения повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "No compatible Wi-Fi Direct adapter is available."
+msgstr "Нет совместимого адаптера Wi-Fi Direct."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Enable Wi-Fi and NetworkManager on your computer."
+msgstr "Включите Wi-Fi и NetworkManager на компьютере."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Cannot list Wi-Fi adapters: %1"
+msgstr "Не удалось получить список адаптеров Wi-Fi: %1"
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Another Wi-Fi Direct group is active on this adapter."
+msgstr "На этом адаптере уже активна другая группа Wi-Fi Direct."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "NetworkManager does not expose a Wi-Fi Direct device."
+msgstr "NetworkManager не предоставляет устройство Wi-Fi Direct."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Make your phone available in Nearby connection, then find nearby devices."
+msgstr "Включите доступность телефона в разделе подключения поблизости, затем найдите устройства."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Searching for nearby devices for 60 seconds..."
+msgstr "Поиск устройств поблизости в течение 60 секунд..."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Nearby search failed: %1"
+msgstr "Поиск устройств поблизости не выполнен: %1"
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Search finished. Select an available device or start a new search."
+msgstr "Поиск завершён. Выберите доступное устройство или повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Unnamed device"
+msgstr "Устройство без имени"
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi adapter removed. Start a new search to reconnect."
+msgstr "Адаптер Wi-Fi удалён. Для подключения повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "This device is no longer available. Start a new search."
+msgstr "Устройство больше не доступно. Повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Ordinary Wi-Fi was lost. The adapter cannot preserve this connection."
+msgstr "Обычное соединение Wi-Fi потеряно. Адаптер не сохраняет его при использовании Wi-Fi Direct."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Cannot read the selected device's Wi-Fi Direct address."
+msgstr "Не удалось получить адрес Wi-Fi Direct выбранного устройства."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Connecting to %1. Accept the system Wi-Fi Direct request on your phone."
+msgstr "Подключение к %1. Примите системный запрос Wi-Fi Direct на телефоне."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi Direct connection failed: %1"
+msgstr "Не удалось установить соединение Wi-Fi Direct: %1"
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi is disabled. Start a new search after enabling it."
+msgstr "Wi-Fi выключен. Включите его и повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi Direct negotiation and IP configuration timed out."
+msgstr "Время согласования Wi-Fi Direct и получения IP-адреса истекло."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi Direct disconnected. Start a new search to reconnect."
+msgstr "Wi-Fi Direct отключён. Для подключения повторите поиск."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi Direct group created. Waiting for an IP address..."
+msgstr "Группа Wi-Fi Direct создана. Ожидание IP-адреса..."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "The Wi-Fi Direct subnet conflicts with an existing local network."
+msgstr "Подсеть Wi-Fi Direct пересекается с существующей локальной сетью."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Wi-Fi Direct group ready. Checking KDE Connect over TLS..."
+msgstr "Группа Wi-Fi Direct готова. Проверка KDE Connect через TLS..."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "No KDE Connect TLS connection was established on this device within 30 seconds."
+msgstr "Соединение TLS с KDE Connect на этом устройстве не установлено за 30 секунд."
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "Connected through Wi-Fi Direct"
+msgstr "Подключено через Wi-Fi Direct"
+
+#: core/wifidirectmanager.cpp
+#, kde-format
+msgid "TLS connection established. Compare verification codes and confirm KDE Connect pairing."
+msgstr "Соединение TLS установлено. Сверьте коды и подтвердите сопряжение KDE Connect."
+
+#: core/wifidirectcapabilities.cpp
+#, kde-format
+msgid "The Wi-Fi driver does not support both Wi-Fi Direct roles."
+msgstr "Драйвер Wi-Fi не поддерживает обе роли Wi-Fi Direct."
+
+#: core/wifidirectcapabilities.cpp
+#, kde-format
+msgid "The driver cannot guarantee ordinary Wi-Fi together with both Wi-Fi Direct roles on two channels."
+msgstr "Драйвер не гарантирует одновременную работу обычного Wi-Fi и обеих ролей Wi-Fi Direct на двух каналах."
+
+#: core/wifidirectcapabilities.cpp
+#, kde-format
+msgid "Wi-Fi Direct capability checking is only available on Linux."
+msgstr "Проверка возможностей Wi-Fi Direct доступна только в Linux."
+
+#: core/wifidirectcapabilities.cpp
+#, kde-format
+msgid "Cannot reliably read Wi-Fi driver capabilities through nl80211."
+msgstr "Не удалось достоверно прочитать возможности драйвера Wi-Fi через nl80211."

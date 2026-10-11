@@ -83,7 +83,7 @@ bool LanDeviceLink::sendPacket(NetworkPacket &np)
         }
 
         if (!m_compositeUploadJob || !m_compositeUploadJob->isRunning()) {
-            m_compositeUploadJob = new CompositeUploadJob(device, true);
+            m_compositeUploadJob = new CompositeUploadJob(device, true, m_socket->localAddress());
         }
 
         m_compositeUploadJob->addSubjob(new UploadJob(np));
@@ -100,7 +100,7 @@ bool LanDeviceLink::sendPacket(NetworkPacket &np)
             return false;
         }
 
-        CompositeUploadJob *fireAndForgetJob = new CompositeUploadJob(device, false);
+        CompositeUploadJob *fireAndForgetJob = new CompositeUploadJob(device, false, m_socket->localAddress());
         fireAndForgetJob->addSubjob(new UploadJob(np));
         fireAndForgetJob->start();
 
@@ -147,6 +147,7 @@ void LanDeviceLink::dataReceived()
 
             const QString address = m_socket->peerAddress().toString();
             const quint16 port = transferInfo[QStringLiteral("port")].toInt();
+            if (!socket->bind(m_socket->localAddress())) continue;
             socket->connectToHostEncrypted(address, port, QIODevice::ReadWrite);
             packet.setPayload(socket, packet.payloadSize());
         }
